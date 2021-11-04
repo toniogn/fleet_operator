@@ -11,11 +11,6 @@ class BatteryLifetimeError(ValueError):
         super().__init__("The battery has to be renewed.", *args)
 
 
-class BatteryRangeError(ValueError):
-    def __init__(self, *args: object) -> None:
-        super().__init__("The battery cannot realize the target.", *args)
-
-
 class EmptyCellError(ValueError):
     def __init__(self, *args: object) -> None:
         super().__init__("The cell doesn't have enough capacity to be discharged anymore.", *args)

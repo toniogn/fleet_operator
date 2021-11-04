@@ -1,6 +1,6 @@
 from json import load, JSONDecodeError
 from abc import ABC, abstractmethod
-from fleet_operator.utils.data_models import ResourcesData
+from utils.data_models import ResourcesData
 from pkg_resources import resource_filename
 
 

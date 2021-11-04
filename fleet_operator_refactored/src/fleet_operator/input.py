@@ -2,8 +2,8 @@ from json import load, JSONDecodeError
 from abc import ABC, abstractmethod
 from typing import Callable
 from pkg_resources import resource_filename
-from fleet_operator.utils.data_models import InputsData, OutputsData
-from fleet_operator.core.core import Fleet, Vehicle
+from utils.data_models import InputsData, OutputsData
+from core.core import Fleet, Vehicle
 
 
 class Input(ABC):
