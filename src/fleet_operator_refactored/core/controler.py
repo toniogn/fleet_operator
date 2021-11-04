@@ -1,5 +1,5 @@
-from core.core import Cell, ChargingStation, Vehicle, Fleet, Battery
-from utils.data_models import ResourcesData
+from .core import Cell, ChargingStation, Vehicle, Fleet, Battery
+from ..utils.data_models import ResourcesData
 
 
 class FleetOperator:

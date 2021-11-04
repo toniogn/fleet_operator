@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
-from fleet_operator.core.controler import FleetOperator
-from fleet_operator.input import JsonInput
-from fleet_operator.resources import JsonResources
-from fleet_operator.utils.criterions import poor_criterion, performant_criterion, medium_criterion
+from fleet_operator_refactored.core.controler import FleetOperator
+from fleet_operator_refactored.input import JsonInput
+from fleet_operator_refactored.resources import JsonResources
+from fleet_operator_refactored.utils.criterions import poor_criterion, performant_criterion, medium_criterion
 
 resources_adapter = JsonResources("data/fleet.json")
 business_logic = FleetOperator(resources_adapter.data)

@@ -2,7 +2,7 @@ from typing import Callable, List, Union, Tuple
 from copy import deepcopy
 from scipy import interpolate
 from itertools import count, chain
-from fleet_operator.utils.utils import (
+from ..utils.utils import (
     EmptyCellError,
     FullCellError,
     BatteryLifetimeError,

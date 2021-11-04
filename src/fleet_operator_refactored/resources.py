@@ -1,6 +1,6 @@
 from json import load, JSONDecodeError
 from abc import ABC, abstractmethod
-from utils.data_models import ResourcesData
+from .utils.data_models import ResourcesData
 from pkg_resources import resource_filename
 
 
@@ -46,7 +46,7 @@ class JsonResources(Resources):
         super().get_resources(*args, **kwargs)
         data = {"vehicles": [], "charging_stations": []}
         for arg in args:
-            with open(resource_filename("fleet_operator", arg)) as resources_json:
+            with open(resource_filename("fleet_operator_refactored", arg)) as resources_json:
                 try:
                     resources = load(resources_json)
                 except (TypeError, JSONDecodeError):

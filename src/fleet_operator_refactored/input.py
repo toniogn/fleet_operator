@@ -2,8 +2,8 @@ from json import load, JSONDecodeError
 from abc import ABC, abstractmethod
 from typing import Callable
 from pkg_resources import resource_filename
-from utils.data_models import InputsData, OutputsData
-from core.core import Fleet, Vehicle
+from .utils.data_models import InputsData, OutputsData
+from .core.core import Fleet, Vehicle
 
 
 class Input(ABC):
@@ -72,7 +72,7 @@ class JsonInput(Input):
         super().get_inputs(*args, **kwargs)
         data = {"scenario": []}
         for arg in args:
-            with open(resource_filename("fleet_operator", arg)) as inputs_json:
+            with open(resource_filename("fleet_operator_refactored", arg)) as inputs_json:
                 try:
                     scenario = load(inputs_json)["scenario"]
                 except (TypeError, JSONDecodeError, KeyError):
