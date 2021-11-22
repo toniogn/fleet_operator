@@ -1,4 +1,4 @@
-from json import load, JSONDecodeError
+from json import load
 from abc import ABC, abstractmethod
 from .utils.data_models import ResourcesData
 from pkg_resources import resource_filename
@@ -44,14 +44,8 @@ class JsonResources(Resources):
     def get_resources(self, *args: list, **kwargs: dict) -> dict:
         """Returns dictionary from concatenated json string from json filenames relative to fleet_operator folder."""
         super().get_resources(*args, **kwargs)
-        data = {"vehicles": [], "charging_stations": []}
-        for arg in args:
-            with open(resource_filename("fleet_operator_refactored", arg)) as resources_json:
-                try:
-                    resources = load(resources_json)
-                except (TypeError, JSONDecodeError):
-                    pass
-                else:
-                    data["vehicles"] += resources["vehicles"]
-                    data["charging_stations"] += resources["charging_stations"]
-        return data
+        with open(
+            resource_filename("fleet_operator_refactored", "data/fleet.json")
+        ) as resources_json:
+            resources = load(resources_json)
+        return resources

@@ -1,28 +1,36 @@
+from typing import Callable
+from fleet_operator_refactored.utils.data_models import ResourcesData
 from .core import Cell, ChargingStation, Vehicle, Fleet, Battery
-from ..utils.data_models import ResourcesData
+from ..resources import Resources
 
 
-class FleetOperator:
+class FleetControler:
     """Controler object that instanciate core objects.
 
     Parameters
     ----------
-    resources_data : ResourcesData
-        Given resources to build the fleet.
+    resources : Resources
+        Resources inherited adpater.
     """
 
-    def __init__(self, resources_data: ResourcesData) -> None:
-        self.resources_data = resources_data
+    def __init__(self, resources: Resources) -> None:
+        self.fleet = self.build(resources.data)
 
-    def build_fleet(self) -> Fleet:
-        """Builds the fleet according to resources data."""
+    def build(self, resources_data: ResourcesData) -> Fleet:
+        """Builds the fleet according to resources data.
+
+        Returns
+        -------
+        Fleet
+            The fleet built according to resources data.
+        """
         fleet = Fleet()
         for (
             cell_nominal_capacity,
             battery_series_cells_number,
             battery_parallel_branches_number,
             vehicle_power,
-        ) in self.resources_data.vehicles:
+        ) in resources_data.vehicles:
             fleet.extend_fleet(
                 Vehicle(
                     vehicle_power,
@@ -33,6 +41,6 @@ class FleetOperator:
                     ),
                 )
             )
-        for vehicle_power in self.resources_data.charging_stations:
+        for vehicle_power in resources_data.charging_stations:
             fleet.add_charging_stations(ChargingStation(vehicle_power))
         return fleet

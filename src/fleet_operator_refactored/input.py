@@ -1,17 +1,27 @@
-from json import load, JSONDecodeError
+from json import load
 from abc import ABC, abstractmethod
 from typing import Callable
 from pkg_resources import resource_filename
+from fleet_operator_refactored.core.controler import FleetControler
 from .utils.data_models import InputsData, OutputsData
 from .core.core import Fleet, Vehicle
 
 
 class Input(ABC):
-    """Inputs interface to inherit from (user-side)."""
+    """Inputs interface to inherit from (user-side).
+    
+    Parameters
+    ----------
+    fleet_controler : FleetControler
+        Controler of the business logic.
+    """
 
-    def __init__(self, *args: list, **kwargs: dict) -> None:
+    def __init__(
+        self, fleet_controler: FleetControler, *args: list, **kwargs: dict
+    ) -> None:
         super().__init__()
         self.data = InputsData(**self.get_inputs(*args, **kwargs))
+        self.fleet_controler = fleet_controler
 
     @abstractmethod
     def get_inputs(self, *args: list, **kwargs: dict) -> dict:
@@ -31,14 +41,12 @@ class Input(ABC):
         """
 
     def run(
-        self, fleet: Fleet, use_priority_criterion: Callable[[Vehicle], float]
+        self, use_priority_criterion: Callable[[Vehicle], float]
     ) -> OutputsData:
         """Run the scenario on the given fleet.
 
         Parameters
         ----------
-        fleet : Fleet
-            The fleet instance on which to run the computation according user inputs.
         use_priority_criterion : Callable[[Vehicle], float]
             Priority criterion to choose which vehicle to use in the fleet.
 
@@ -51,8 +59,8 @@ class Input(ABC):
             print(
                 f"Progession: {round((index + 1) / len(self.data.scenario) * 100, 1)}%"
             )
-            fleet.use(time_lapse, fleet_load, use_priority_criterion)
-        return OutputsData(time=fleet.time, grades=fleet.grades)
+            self.fleet_controler.fleet.use(time_lapse, fleet_load, use_priority_criterion)
+        return OutputsData(time=self.fleet_controler.fleet.time, grades=self.fleet_controler.fleet.grades)
 
 
 class DirectInput(Input):
@@ -70,13 +78,8 @@ class JsonInput(Input):
     def get_inputs(self, *args: list, **kwargs: dict) -> dict:
         """Returns dictionary from concatenated json string from json filenames relative to fleet_operator folder."""
         super().get_inputs(*args, **kwargs)
-        data = {"scenario": []}
-        for arg in args:
-            with open(resource_filename("fleet_operator_refactored", arg)) as inputs_json:
-                try:
-                    scenario = load(inputs_json)["scenario"]
-                except (TypeError, JSONDecodeError, KeyError):
-                    pass
-                else:
-                    data["scenario"] += scenario
-        return data
+        with open(
+            resource_filename("fleet_operator_refactored", "data/inputs.json")
+        ) as inputs_json:
+            inputs = load(inputs_json)
+        return inputs
