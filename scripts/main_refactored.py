@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from fleet_operator_refactored.core.controler import FleetControler
+from fleet_operator_refactored.core import FleetControler
 from fleet_operator_refactored.input import JsonInput
 from fleet_operator_refactored.resources import JsonResources
 from fleet_operator_refactored.utils.criterions import poor_criterion, performant_criterion, medium_criterion

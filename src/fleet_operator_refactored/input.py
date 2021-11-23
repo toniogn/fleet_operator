@@ -2,9 +2,9 @@ from json import load
 from abc import ABC, abstractmethod
 from typing import Callable
 from pkg_resources import resource_filename
-from fleet_operator_refactored.core.controler import FleetControler
+from .core import FleetControler
 from .utils.data_models import InputsData, OutputsData
-from .core.core import Fleet, Vehicle
+from .core import Vehicle
 
 
 class Input(ABC):

@@ -1,4 +1,4 @@
-from ..core.core import Vehicle
+from ..core import Vehicle
 
 
 def performant_criterion(vehicle: Vehicle) -> float:

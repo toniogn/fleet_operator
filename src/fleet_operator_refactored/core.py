@@ -2,7 +2,9 @@ from typing import Callable, List, Union, Tuple
 from copy import deepcopy
 from scipy import interpolate
 from itertools import count, chain
-from ..utils.utils import (
+from .resources import Resources
+from .utils.data_models import ResourcesData
+from .utils.utils import (
     EmptyCellError,
     FullCellError,
     BatteryLifetimeError,
@@ -458,3 +460,45 @@ class Fleet:
             [repr(vehicle) for vehicle in self.__vehicles]
             + [repr(charging_station) for charging_station in self.__charging_stations]
         )
+
+
+class FleetControler:
+    """Controler object that instanciate core objects.
+
+    Parameters
+    ----------
+    resources : Resources
+        Resources inherited adpater.
+    """
+
+    def __init__(self, resources: Resources) -> None:
+        self.fleet = self.build(resources.data)
+
+    def build(self, resources_data: ResourcesData) -> Fleet:
+        """Builds the fleet according to resources data.
+
+        Returns
+        -------
+        Fleet
+            The fleet built according to resources data.
+        """
+        fleet = Fleet()
+        for (
+            cell_nominal_capacity,
+            battery_series_cells_number,
+            battery_parallel_branches_number,
+            vehicle_power,
+        ) in resources_data.vehicles:
+            fleet.extend_fleet(
+                Vehicle(
+                    vehicle_power,
+                    Battery(
+                        Cell(nominal_capacity=cell_nominal_capacity),
+                        battery_series_cells_number,
+                        battery_parallel_branches_number,
+                    ),
+                )
+            )
+        for vehicle_power in resources_data.charging_stations:
+            fleet.add_charging_stations(ChargingStation(vehicle_power))
+        return fleet
