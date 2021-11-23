@@ -24,6 +24,7 @@ Install dependencies with `pip install –r requirements.txt`.
 
 ## Repository content
 
+```
 -> scripts: contains useful scripts
 -----> generate_fleet_json.py: generate resources data
 -----> generate_inputs_json.py: generate inputs data
@@ -49,5 +50,6 @@ Install dependencies with `pip install –r requirements.txt`.
 -> .gitignore
 -> README.md
 -> requirements.txt
+```
 
 ## To refactor software functioning
