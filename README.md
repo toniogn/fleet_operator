@@ -96,3 +96,9 @@ resources_adapter = JsonResources()
 business_logic = FleetControler(resources_adapter)
 inputs_adapter = JsonInput(business_logic)
 ```
+
+## pydantic benefits
+
+Pydantic is a type checker library which allows to implement data models that check it's fields' type once one is trying to instanciate it. It allows also to implement fast custom validator over the model's field.
+
+In H.A. designing it could be used to cast resources and inputs data to be sure that data are edible for the business logic. As our interfaces get methods return dictionaries, one just have to pass those dictionaries as pydantic data models parameters with a double splat operator (**).
