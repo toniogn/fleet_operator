@@ -16,14 +16,15 @@ The root folder contains two child folders. One containing a classical M.V.C. ve
 
 ## Installation
 
-Start a terminal and switch to your local repositories folder
-Clone the repository with `git clone https://github.com/toniogn/fleet_operator.git`.
-Create a dedicated virtual environment with `–m venv your_venv_name`.
-Activate it with `your_venv_name/Scripts/activate`.
-Install dependencies with `pip install –r requirements.txt`.
+- Start a terminal and switch to your local repositories folder
+- Clone the repository with `git clone https://github.com/toniogn/fleet_operator.git`.
+- Create a dedicated virtual environment with `–m venv your_venv_name`.
+- Activate it with `your_venv_name/Scripts/activate`.
+- Install dependencies with `pip install –r requirements.txt`.
 
 ## Repository content
 
+The repository is organized as follows :
 ```
 -> scripts: contains useful scripts
 -----> generate_fleet_json.py: generate resources data
@@ -52,4 +53,31 @@ Install dependencies with `pip install –r requirements.txt`.
 -> requirements.txt
 ```
 
-## To refactor software functioning
+## Current functioning and problematics
+
+The software version to refactor works as follows :
+- FleetControler is instanciated.
+  - A Fleet is instanciated and populated with the build_fleet method from fleet.json data.
+- A simulation start with the controler's run method taking a sorting function from criterions.py as parameter and loading inputs data from input.json.
+
+Their are two main problematics with M.V.C architecture:
+
+- At « server-side »: dependency must be reversed. With M.V.C. pattern the business logic depends on resources, it has to load them according to the chosen infrastructure. To reverse it one has to create an interface detailing how resources must be loaded and at least one inheriting adapter dedicated to a given resources infrastructure loading.
+- At « user-side »: dependency is already well oreiented. For instance, from a python console you can import, instanciate and use business logic objects. Nevertheless, H.A. gives the advantage to explicitly limit the visible method interacting with the business logic. So an interface at this side with at least one adapter should also be implemented.
+
+## Instructions
+
+The instructions could be listed as follows:
+- Create inputs.py and resources.py modules respectively implementing Input and Resources interfaces with get_inputs and get_resources abstract methods both returning dictionaries.
+- In each pre-created module, implement adapters JsonInput and JsonResources, inherited from interfaces, respectively loading data from inputs.json and fleet.json.
+
+For interfaces implementing, use the abc library:
+
+```python
+from abc import ABC, abstractmethod
+
+class Interface(ABC):
+  @abstractmethod
+  def abstract_method(self, *args, **kwargs):
+    pass
+```
