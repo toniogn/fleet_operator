@@ -72,7 +72,6 @@ The instructions could be listed as follows:
 - In each pre-created module, implement adapters JsonInput and JsonResources, inherited from interfaces, respectively loading data from inputs.json and fleet.json.
 
 For interfaces implementing, use the abc library:
-
 ```python
 from abc import ABC, abstractmethod
 
@@ -80,4 +79,20 @@ class Interface(ABC):
   @abstractmethod
   def abstract_method(self, *args, **kwargs):
     pass
+```
+
+For data loading you can re-use the controler's code:
+```python
+import json
+from pkg_resources import resource_filename
+
+with open(resource_filename("fleet_operator_to_refactor", "path_to_json_file_under_src")) as json_file:
+  file_dict = json.load(json_file)
+```
+
+If you struggle with H.A. concepts try to refactor the code according to a main file looking like this:
+```python
+resources_adapter = JsonResources()
+business_logic = FleetControler(resources_adapter)
+inputs_adapter = JsonInput(business_logic)
 ```
