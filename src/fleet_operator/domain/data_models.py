@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Literal, Tuple
 from pydantic import BaseModel
 from pydantic.fields import Field
 from pydantic.types import confloat, conint, conlist
@@ -22,10 +22,14 @@ class InputsData(BaseModel):
         ...,
         description="Scenario of fleet tasks to realize as a list of tuples: timelapse of task (s), task's needed fleet's load.",
     )
+    use_priority_criterion: Literal["POOR", "MEDIUM", "PERFORMANT"] = Field(
+        ...,
+        description="Criterion to use to sort vehicles and so to choose which ones will be used for a given task.",
+    )
 
 
 class OutputsData(BaseModel):
-    grades: conlist(int, min_items=1) = Field(
+    grades: conlist(float, min_items=1) = Field(
         ...,
         description="Cumulated number of fleet's succeded tasks (timelapse and load respected).",
     )

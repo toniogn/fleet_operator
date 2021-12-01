@@ -1,9 +1,11 @@
-import json
-from typing import Callable, List, Union, Tuple
+from functools import partial
+from enum import Enum
+from typing import Callable, Dict, List, Literal, Union, Tuple
 from copy import deepcopy
 from scipy import interpolate
 from itertools import count, chain
-from pkg_resources import resource_filename
+from .server import IObtainFleetData
+from .data_models import ResourcesData
 from .utils import (
     EmptyCellError,
     FullCellError,
@@ -360,11 +362,11 @@ class Fleet:
     """
 
     def __init__(self, *args: List[Union[Vehicle, ChargingStation]]) -> None:
-        self.__vehicles: List[Vehicle] = []
+        self.__vehicles: Dict[str, Vehicle] = {}
         self.__charging_stations: List[ChargingStation] = []
         for arg in args:
             if isinstance(arg, Vehicle):
-                self.__vehicles.append(arg)
+                self.__vehicles[arg.id] = arg
             elif isinstance(arg, ChargingStation):
                 self.__charging_stations.append(arg)
         self.time = [0]
@@ -374,7 +376,7 @@ class Fleet:
         self,
         timelapse: float,
         load: float,
-        use_priority_criterion: Callable[[Vehicle], float],
+        use_priority_criterion: Literal["POOR", "MEDIUM", "PERFORMANT"],
     ) -> None:
         """Method to use the fleet.
 
@@ -387,12 +389,12 @@ class Fleet:
             Time lapse of fleet use (s).
         load : float
             Load of use of the fleet.
-        use_priority_criterion : Callable[[Vehicle], float]
-            A function that takes a 'Vehicle' instance as input and that returns a numerical sorting criterion (vehicle's battery's age for instance). Higher the criterion is, higher the priority will be to use the vehicle.
+        use_priority_criterion : Literal["POOR", "MEDIUM", "PERFORMANT"]
+            Name of an implemented function that takes a 'Vehicle' instance as input and that returns a numerical sorting criterion (vehicle's battery's age for instance). Higher the criterion value is, higher the priority will be to use the vehicle.
         """
         number_of_vehicles_to_use = round(load * len(self.__vehicles))
         sorted_vehicles = sorted(
-            self.__vehicles, key=use_priority_criterion, reverse=True
+            self.__vehicles.values(), key=Criterions[use_priority_criterion].value
         )
         vehicles_to_use = {
             vehicle.id: vehicle
@@ -432,14 +434,10 @@ class Fleet:
             except FullCellError:
                 pass
 
-        self.__vehicles = [
-            vehicle
-            for vehicle in chain(
-                vehicles_to_use.values(),
-                vehicles_to_charge.values(),
-                failed_vehicles.values(),
-            )
-        ]
+        self.__vehicles.update(vehicles_to_use)
+        self.__vehicles.update(vehicles_to_charge)
+        self.__vehicles.update(failed_vehicles)
+
         self.time.append(timelapse + self.time[-1])
         self.grades.append(grade + self.grades[-1])
 
@@ -447,7 +445,7 @@ class Fleet:
         """Extends the fleet with new vehicles."""
         for arg in args:
             if isinstance(arg, Vehicle):
-                self.__vehicles.append(arg)
+                self.__vehicles[arg.id] = arg
 
     def add_charging_stations(self, *args: List[ChargingStation]) -> None:
         """Adds new charging stations to the fleet."""
@@ -455,81 +453,100 @@ class Fleet:
             if isinstance(arg, ChargingStation):
                 self.__charging_stations.append(arg)
 
+    def reset(self) -> None:
+        """Resets the fleet vehicles and metrics."""
+        self.time = [0]
+        self.grades = [0]
+        for vehicle in self.__vehicles.values():
+            vehicle.change_battery()
+
     def __repr__(self) -> str:
         return "Fleet(*{})".format(
-            [repr(vehicle) for vehicle in self.__vehicles]
+            [repr(vehicle) for vehicle in self.__vehicles.values()]
             + [repr(charging_station) for charging_station in self.__charging_stations]
         )
 
 
-class FleetControler:
-    """Controler that instanciate core objects.
+def performant_criterion(vehicle: Vehicle) -> float:
+    """Describe a criterion computing how long the vehicle can be used until battery's end of life.
 
     Parameters
     ----------
-    resources_data_file_path : resources_data_file_path
-        Path of the resources data file.
+    vehicle: Vehicle
+        Vehicle on which to compute the criterion.
+    """
+    return (
+        vehicle.battery.current_capacity
+        - vehicle.battery.MINIMUM_AVAILABLE_CAPACITY_RATIO
+        * vehicle.battery.nominal_capacity
+    ) / vehicle.power
+
+
+def medium_criterion(vehicle: Vehicle) -> float:
+    """Describe a criterion computing how long the vehicle can be used until battery's end of life.
+
+    Parameters
+    ----------
+    vehicle: Vehicle
+        Vehicle on which to compute the criterion.
+    """
+    return vehicle.battery.current_capacity / vehicle.power
+
+
+def poor_criterion(vehicle: Vehicle) -> float:
+    """Describe a criterion computing how long the vehicle can be used until battery's end of life.
+
+    Parameters
+    ----------
+    vehicle: Vehicle
+        Vehicle on which to compute the criterion.
+    """
+    return vehicle.battery.cell.soc
+
+
+class Criterions(Enum):
+    POOR = partial(poor_criterion)
+    MEDIUM = partial(medium_criterion)
+    PERFORMANT = partial(performant_criterion)
+
+
+class FleetControler:
+    """Controler object that instanciate core objects.
+
+    Parameters
+    ----------
+    server_side_adapter : IObtainFleetData
+        IObtainFleetData inherited adpater.
     """
 
-    def __init__(self) -> None:
-        self.fleet = self.build_fleet()
+    def __init__(self, server_side_adapter: IObtainFleetData) -> None:
+        self.fleet = self.build_fleet(server_side_adapter.data)
 
-    def build_fleet(self) -> Fleet:
+    def build_fleet(self, resources_data: ResourcesData) -> Fleet:
         """Builds the fleet according to resources data.
 
         Returns
         -------
         Fleet
-            The fleet built against the resources data.
+            The fleet built according to resources data.
         """
         fleet = Fleet()
-        with open(
-            resource_filename("fleet_operator_refactored", "data/fleet.json")
-        ) as resources_data_file:
-            resources_data = json.load(resources_data_file)
-            for (
-                cell_nominal_capacity,
-                battery_series_cells_number,
-                battery_parallel_branches_number,
-                vehicle_power,
-            ) in resources_data["vehicles"]:
-                fleet.extend_fleet(
-                    Vehicle(
-                        vehicle_power,
-                        Battery(
-                            Cell(nominal_capacity=cell_nominal_capacity),
-                            battery_series_cells_number,
-                            battery_parallel_branches_number,
-                        ),
-                    )
+        for (
+            cell_nominal_capacity,
+            battery_series_cells_number,
+            battery_parallel_branches_number,
+            vehicle_power,
+        ) in resources_data.vehicles:
+            fleet.extend_fleet(
+                Vehicle(
+                    vehicle_power,
+                    Battery(
+                        Cell(nominal_capacity=cell_nominal_capacity),
+                        battery_series_cells_number,
+                        battery_parallel_branches_number,
+                    ),
                 )
-            for vehicle_power in resources_data["charging_stations"]:
-                fleet.add_charging_stations(ChargingStation(vehicle_power))
-            return fleet
-
-    def run(
-        self,
-        use_priority_criterion: Callable[[Vehicle], float],
-    ) -> Tuple[List[float], List[float]]:
-        """Runs a simulation scenario on the fleet.
-
-        Parameters
-        ----------
-        use_priority_criterion : Callable[[Vehicle], float]
-            Using criterion to sort vehicles against in order to choose which one should be used.
-
-        Returns
-        -------
-        Tuple[List[float], List[float]]
-            Tuple of two lists. The first for accumulated time and the second for accumulated grade after each scenario's task.
-        """
-        with open(
-            resource_filename("fleet_operator_refactored", "data/inputs.json")
-        ) as inputs_data_file:
-            inputs_data = json.load(inputs_data_file)
-            for index, (timelapse, load) in enumerate(inputs_data["scenario"]):
-                print(
-                    f"Progession: {round((index + 1) / len(inputs_data['scenario']) * 100, 1)}%"
-                )
-                self.fleet.use(timelapse, load, use_priority_criterion)
-        return self.fleet.time, self.fleet.grades
+            )
+        for vehicle_power in resources_data.charging_stations:
+            fleet.add_charging_stations(ChargingStation(vehicle_power))
+        return fleet

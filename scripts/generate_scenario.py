@@ -7,10 +7,10 @@ tasks_number = 500
 load_range = (0.1, 1)
 timelapse_range = (Constants.SECONDS_PER_HOUR / 4, Constants.SECONDS_PER_HOUR * 2)
 
-inputs = {"scenario": []}
+scenario = []
 
 for i in range(tasks_number):
-    inputs["scenario"].append(
+    scenario.append(
         tuple(
             random() * (max(value_range) - min(value_range)) + min(value_range)
             for value_range in [
@@ -20,7 +20,7 @@ for i in range(tasks_number):
         )
     )
 
-inputs_json = json.dumps(inputs)
+scenario_json = json.dumps(scenario)
 
-with open("./src/fleet_operator/data/inputs.json", "w+") as file:
-    file.write(inputs_json)
+with open("./src/fleet_operator/data/scenario.json", "w+") as file:
+    file.write(scenario_json)
