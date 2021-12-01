@@ -1,6 +1,6 @@
 import json
 from random import random
-from fleet_operator.utils.utils import Constants
+from fleet_operator.domain.utils import Constants
 
 tasks_number = 500
 
