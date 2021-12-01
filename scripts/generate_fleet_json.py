@@ -1,6 +1,6 @@
 import json
 from random import random
-from fleet_operator.utils.utils import Constants
+from fleet_operator.utils import Constants
 
 number_of_vehicles = 100
 number_of_charging_stations = 20

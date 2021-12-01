@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
-from fleet_operator_to_refactor.core import FleetControler
-from fleet_operator_to_refactor.criterions import poor_criterion, performant_criterion, medium_criterion
+from fleet_operator.core import FleetControler
+from fleet_operator.criterions import poor_criterion, performant_criterion, medium_criterion
 
 fleet_controler = FleetControler()
 

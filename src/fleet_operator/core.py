@@ -1,5 +1,5 @@
 import json
-from typing import Callable, List, Union, Tuple
+from typing import Callable, Dict, List, Union, Tuple
 from copy import deepcopy
 from scipy import interpolate
 from itertools import count, chain
@@ -360,11 +360,11 @@ class Fleet:
     """
 
     def __init__(self, *args: List[Union[Vehicle, ChargingStation]]) -> None:
-        self.__vehicles: List[Vehicle] = []
+        self.__vehicles: Dict[str, Vehicle] = {}
         self.__charging_stations: List[ChargingStation] = []
         for arg in args:
             if isinstance(arg, Vehicle):
-                self.__vehicles.append(arg)
+                self.__vehicles[arg.id] = arg
             elif isinstance(arg, ChargingStation):
                 self.__charging_stations.append(arg)
         self.time = [0]
@@ -391,9 +391,7 @@ class Fleet:
             A function that takes a 'Vehicle' instance as input and that returns a numerical sorting criterion (vehicle's battery's age for instance). Higher the criterion is, higher the priority will be to use the vehicle.
         """
         number_of_vehicles_to_use = round(load * len(self.__vehicles))
-        sorted_vehicles = sorted(
-            self.__vehicles, key=use_priority_criterion, reverse=True
-        )
+        sorted_vehicles = sorted(self.__vehicles.values(), key=use_priority_criterion)
         vehicles_to_use = {
             vehicle.id: vehicle
             for vehicle in sorted_vehicles[:number_of_vehicles_to_use]
@@ -432,14 +430,10 @@ class Fleet:
             except FullCellError:
                 pass
 
-        self.__vehicles = [
-            vehicle
-            for vehicle in chain(
-                vehicles_to_use.values(),
-                vehicles_to_charge.values(),
-                failed_vehicles.values(),
-            )
-        ]
+        self.__vehicles.update(vehicles_to_use)
+        self.__vehicles.update(vehicles_to_charge)
+        self.__vehicles.update(failed_vehicles)
+
         self.time.append(timelapse + self.time[-1])
         self.grades.append(grade + self.grades[-1])
 
@@ -447,7 +441,7 @@ class Fleet:
         """Extends the fleet with new vehicles."""
         for arg in args:
             if isinstance(arg, Vehicle):
-                self.__vehicles.append(arg)
+                self.__vehicles[arg.id] = arg
 
     def add_charging_stations(self, *args: List[ChargingStation]) -> None:
         """Adds new charging stations to the fleet."""
@@ -455,9 +449,16 @@ class Fleet:
             if isinstance(arg, ChargingStation):
                 self.__charging_stations.append(arg)
 
+    def reset(self) -> None:
+        """Resets the fleet vehicles and metrics."""
+        self.time = [0]
+        self.grades = [0]
+        for vehicle in self.__vehicles.values():
+            vehicle.change_battery()
+
     def __repr__(self) -> str:
         return "Fleet(*{})".format(
-            [repr(vehicle) for vehicle in self.__vehicles]
+            [repr(vehicle) for vehicle in self.__vehicles.values()]
             + [repr(charging_station) for charging_station in self.__charging_stations]
         )
 
@@ -484,9 +485,9 @@ class FleetControler:
         """
         fleet = Fleet()
         with open(
-            resource_filename("fleet_operator_refactored", "data/fleet.json")
+            resource_filename("fleet_operator", "data/fleet.json"), "r"
         ) as resources_data_file:
-            resources_data = json.load(resources_data_file)
+            resources_data = json.loads(resources_data_file.read())
             for (
                 cell_nominal_capacity,
                 battery_series_cells_number,
@@ -503,8 +504,8 @@ class FleetControler:
                         ),
                     )
                 )
-            for vehicle_power in resources_data["charging_stations"]:
-                fleet.add_charging_stations(ChargingStation(vehicle_power))
+            for charging_station_power in resources_data["charging_stations"]:
+                fleet.add_charging_stations(ChargingStation(charging_station_power))
             return fleet
 
     def run(
@@ -523,10 +524,11 @@ class FleetControler:
         Tuple[List[float], List[float]]
             Tuple of two lists. The first for accumulated time and the second for accumulated grade after each scenario's task.
         """
+        self.fleet.reset()
         with open(
-            resource_filename("fleet_operator_refactored", "data/inputs.json")
+            resource_filename("fleet_operator", "data/inputs.json"), "r"
         ) as inputs_data_file:
-            inputs_data = json.load(inputs_data_file)
+            inputs_data = json.loads(inputs_data_file.read())
             for index, (timelapse, load) in enumerate(inputs_data["scenario"]):
                 print(
                     f"Progession: {round((index + 1) / len(inputs_data['scenario']) * 100, 1)}%"
