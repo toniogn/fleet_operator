@@ -24,30 +24,18 @@ The root folder contains two child folders. One containing a classical M.V.C. ve
 
 ## Repository content
 
-The repository is organized as follows :
+The repository is organized on two branches as follows :
 ```
 -> scripts: contains useful scripts
 -----> generate_fleet_json.py: generate resources data
------> generate_inputs_json.py: generate inputs data
------> main_to_refactor.py: main file to practice refactoring on
------> main_refactored.py: main file for the refactored solution
+-----> generate_scenario_json.py: generate inputs data
+-----> main.py: main file
 -> src: contains source codes
------> fleet_operator_refactored: contains an H.A. refactored solution
+-----> fleet_operator
 ---------> data
--------------> inputs.json: inputs data generated in generate_scenario_json
+-------------> scenario.json: inputs data generated in generate_scenario_json
 -------------> fleet.json: resources data generated in generate_fleet_json
----------> utils
--------------> criterions.py: contains sorting functions to decide which vehicle to send for a given task
--------------> data_models.py: contains pydantic classes defining data types at both interfaces and output
--------------> utils.py: contains custom exceptions and a class gathering physics constants
----------> core.py: contains the business logic and its controler
----------> input.py: contains user-side interface and inheriting adapters
----------> resources.py: contains server-side interface and inheriting adapters
------> fleet_operator_to_refactor: contains the source code to practice refactoring on
----------> data
----------> core.py
----------> criterions.py
----------> utils.py
+---------> etc...
 -> .gitignore
 -> README.md
 -> requirements.txt
@@ -67,9 +55,12 @@ Their are two main problematics with M.V.C architecture:
 
 ## Instructions
 
+First of all, swith to the "to_refactor" branch with `git switch to_refactor`.
+
 The instructions could be listed as follows:
-- Create inputs.py and resources.py modules respectively implementing Input and Resources interfaces with get_inputs and get_resources abstract methods both returning dictionaries.
-- In each pre-created module, implement adapters JsonInput and JsonResources, inherited from interfaces, respectively loading data from inputs.json and fleet.json.
+- Create a folder called domain to identify what belongs to the business logic (core.py and utils.py within it).
+- Create, within the domain folder, user.py and server.py modules respectively implementing IRequestInputsData and IObtainFleetData interfaces with get_inputs_data and get_fleet_data abstract methods both returning dictionaries.
+- Create, next to the domain folder, two modules also called user.py and server.py respectively implementing adapters JsonUserAdapter and JsonServerAdapter, inherited from interfaces, loading data from scenario.json and fleet.json.
 
 For interfaces implementing, use the abc library:
 ```python
@@ -81,20 +72,20 @@ class Interface(ABC):
     pass
 ```
 
-For data loading you can re-use the controler's code:
+For data loading you can re-use the core controler's code:
 ```python
 import json
 from pkg_resources import resource_filename
 
-with open(resource_filename("fleet_operator_to_refactor", "path_to_json_file_under_src")) as json_file:
+with open(resource_filename("fleet_operator", "path_to_json_file_under_src")) as json_file:
   file_dict = json.load(json_file)
 ```
 
 If you struggle with H.A. concepts try to refactor the code according to a main file looking like this:
 ```python
-resources_adapter = JsonResources()
-business_logic = FleetControler(resources_adapter)
-inputs_adapter = JsonInput(business_logic)
+server_side_adapter = JsonServerAdapter()
+fleet_controler = FleetControler(server_side_adapter)
+inputs_adapter = JsonUserAdapter(fleet_controler, use_priority_criterion)
 ```
 
 ## pydantic benefits

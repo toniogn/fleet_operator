@@ -2,41 +2,25 @@ import json
 from random import random
 from fleet_operator.utils import Constants
 
-number_of_vehicles = 100
-number_of_charging_stations = 20
+tasks_number = 500
 
-cell_nominal_capacity_range = (
-    2 * Constants.SECONDS_PER_HOUR,
-    3 * Constants.SECONDS_PER_HOUR,
-)
-battery_series_cells_number_range = (50, 150)
-battery_parallel_branches_number = (5, 15)
-vehicle_power_range = (10e3, 50e3)
-charging_stations_power_range = (50e3, 150e3)
+load_range = (0.1, 1)
+timelapse_range = (Constants.SECONDS_PER_HOUR / 4, Constants.SECONDS_PER_HOUR * 2)
 
-fleet = {"vehicles": [], "charging_stations": []}
+scenario = []
 
-for i in range(number_of_vehicles):
-    fleet["vehicles"].append(
+for i in range(tasks_number):
+    scenario.append(
         tuple(
             random() * (max(value_range) - min(value_range)) + min(value_range)
             for value_range in [
-                cell_nominal_capacity_range,
-                battery_series_cells_number_range,
-                battery_parallel_branches_number,
-                vehicle_power_range,
+                timelapse_range,
+                load_range,
             ]
         )
     )
 
-for i in range(number_of_charging_stations):
-    fleet["charging_stations"].append(
-        random()
-        * (max(charging_stations_power_range) - min(charging_stations_power_range))
-        + min(charging_stations_power_range)
-    )
+scenario_json = json.dumps(scenario)
 
-fleet_json = json.dumps(fleet)
-
-with open("./src/fleet_operator/data/fleet.json", "w+") as file:
-    file.write(fleet_json)
+with open("./src/fleet_operator/data/scenario.json", "w+") as file:
+    file.write(scenario_json)
